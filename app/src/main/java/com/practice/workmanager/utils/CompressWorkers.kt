@@ -1,6 +1,5 @@
 package com.practice.workmanager.utils
 
-import android.annotation.SuppressLint
 import android.app.NotificationManager
 import android.content.Context
 import android.util.Log
