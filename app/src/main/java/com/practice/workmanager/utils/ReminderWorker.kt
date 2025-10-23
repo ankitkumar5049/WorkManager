@@ -37,7 +37,7 @@ class ReminderWorker(
         val message = when {
             hour in 9..17 -> { // between 9:00 and 17:59 (working hours)
                 val hoursLeft = 18 - hour - if (minute > 0) 1 else 0
-                "$hoursLeft hour${if (hoursLeft != 1) "s" else ""} left to leave office!"
+                "Around $hoursLeft hour${if (hoursLeft != 1) "s" else ""} left to leave office!"
             }
             hour < 9 || (hour == 9 && minute < 30) -> {
                 val target = Calendar.getInstance().apply {
@@ -46,7 +46,7 @@ class ReminderWorker(
                 }
                 val diffMillis = target.timeInMillis - now.timeInMillis
                 val hoursLeft = (diffMillis / (1000 * 60 * 60)).toInt()
-                "$hoursLeft hour${if (hoursLeft != 1) "s" else ""} left to go to office!"
+                "Around $hoursLeft hour${if (hoursLeft != 1) "s" else ""} left to go to office!"
             }
             else -> {
                 "Workday over! See you tomorrow 👋"

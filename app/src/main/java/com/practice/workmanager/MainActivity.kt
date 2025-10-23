@@ -26,10 +26,18 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.ViewModelProvider
+import androidx.work.Constraints
+import androidx.work.ExistingPeriodicWorkPolicy
+import androidx.work.NetworkType
+import androidx.work.OneTimeWorkRequestBuilder
+import androidx.work.PeriodicWorkRequestBuilder
+import androidx.work.WorkManager
 import com.practice.workmanager.ui.theme.WorkManagerTheme
+import com.practice.workmanager.utils.QuoteWorker
 import kotlinx.coroutines.delay
 import java.util.Calendar
 import java.util.UUID
+import java.util.concurrent.TimeUnit
 
 class MainActivity : ComponentActivity() {
 
@@ -48,30 +56,16 @@ class MainActivity : ComponentActivity() {
         // Initialize notification channel (required for NotifyWorker)
         createNotificationChannel()
 
+        createQuoteChannel()
+
+//         ✅ Schedule the periodic WorkManager task here
+        scheduleHourlyQuoteWork()
+
         // Initialize ViewModel
         viewModel = ViewModelProvider(this)[MainViewModel::class.java]
 
         viewModel.scheduleHourlyReminders(this)
 
-        // Example: hardcoded image paths for testing
-//        val samplePaths = listOf(
-//            "/storage/emulated/0/Download/test1.jpg",
-//            "/storage/emulated/0/Download/test2.png"
-//        )
-
-        // Start the WorkManager chain
-//        uploadWorkId = viewModel.startWork(this, samplePaths)
-
-        // Observe progress of upload work
-//        uploadWorkId?.let { id ->
-//            WorkManager.getInstance(this)
-//                .getWorkInfoByIdLiveData(id)
-//                .observe(this) { info ->
-//                    val progress = info.progress.getInt("PROGRESS", 0)
-//                    Log.d("WorkProgress", "Upload: $progress%")
-//                    if(progress==100) text = "Upload Complete"
-//                }
-//        }
 
         setContent {
             WorkManagerTheme {
@@ -89,7 +83,7 @@ class MainActivity : ComponentActivity() {
                 var remainingTime by remember { mutableStateOf(viewModel.getTimeLeft(targetTime)) }
 
                 LaunchedEffect(Unit) {
-                    viewModel.triggerInitialNotification(applicationContext, remainingTime)
+//                    viewModel.triggerInitialNotification(applicationContext, remainingTime)
                     while (true) {
                         remainingTime = viewModel.getTimeLeft(targetTime)
                         delay(1000)
@@ -103,12 +97,12 @@ class MainActivity : ComponentActivity() {
                     verticalArrangement = Arrangement.Center,
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    Text(
-                        text = "Time left to leave office:",
-                        modifier = Modifier
-                            .padding(top = 32.dp, start = 16.dp),
-                        fontSize = 24.sp
-                    )
+//                    Text(
+//                        text = "Time left to leave office:",
+//                        modifier = Modifier
+//                            .padding(top = 32.dp, start = 16.dp),
+//                        fontSize = 24.sp
+//                    )
 
                     Text(
                         text = "${viewModel.formatDuration(remainingTime)} hrs",
@@ -152,5 +146,39 @@ class MainActivity : ComponentActivity() {
                 .createNotificationChannel(channel)
         }
     }
+
+    private fun createQuoteChannel() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val channel = NotificationChannel(
+                "quote_channel",
+                "Hourly Quotes",
+                NotificationManager.IMPORTANCE_HIGH
+            ).apply {
+                description = "Shows motivational quotes every hour"
+            }
+
+            val manager = getSystemService(NotificationManager::class.java)
+            manager.createNotificationChannel(channel)
+        }
+    }
+
+    private fun scheduleHourlyQuoteWork() {
+        val constraints = Constraints.Builder()
+            .setRequiredNetworkType(NetworkType.CONNECTED)
+            .build()
+
+        val hourlyWork = PeriodicWorkRequestBuilder<QuoteWorker>(
+            1, TimeUnit.HOURS // Every 1 hour
+        )
+            .setConstraints(constraints)
+            .build()
+
+        WorkManager.getInstance(this).enqueueUniquePeriodicWork(
+            "hourly_quote_work", // unique name
+            ExistingPeriodicWorkPolicy.UPDATE, // replace if already scheduled
+            hourlyWork
+        )
+    }
+
 
 }
