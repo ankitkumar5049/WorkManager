@@ -2,6 +2,8 @@ package com.practice.workmanager
 
 import android.app.NotificationChannel
 import android.app.NotificationManager
+import android.content.Intent
+import android.content.IntentFilter
 import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -32,6 +34,7 @@ import androidx.work.NetworkType
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
+import com.practice.workmanager.broadcastReceiver.BatteryReceiver
 import com.practice.workmanager.ui.theme.WorkManagerTheme
 import com.practice.workmanager.utils.QuoteWorker
 import kotlinx.coroutines.delay
@@ -97,12 +100,6 @@ class MainActivity : ComponentActivity() {
                     verticalArrangement = Arrangement.Center,
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-//                    Text(
-//                        text = "Time left to leave office:",
-//                        modifier = Modifier
-//                            .padding(top = 32.dp, start = 16.dp),
-//                        fontSize = 24.sp
-//                    )
 
                     Text(
                         text = "${viewModel.formatDuration(remainingTime)} hrs",
@@ -117,6 +114,23 @@ class MainActivity : ComponentActivity() {
 
 
     }
+
+    // when broadcast receiver is not declared over manifest file, it only work while the app is live
+    // when it is declared over manifest, it's work even when the app is not live
+
+//    override fun onStart() {
+//        super.onStart()
+//        val filter = IntentFilter(Intent.ACTION_BATTERY_CHANGED)
+//        registerReceiver(batteryReceiver, filter)
+//    }
+//
+//    override fun onStop() {
+//        super.onStop()
+//        unregisterReceiver(batteryReceiver)
+//    }
+
+    private val batteryReceiver = BatteryReceiver()
+
 
     private fun createNotificationChannel() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
