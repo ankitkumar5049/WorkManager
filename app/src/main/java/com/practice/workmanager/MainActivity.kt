@@ -9,11 +9,16 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.systemBars
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.LaunchedEffect
@@ -33,6 +38,7 @@ import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import com.practice.workmanager.ui.theme.WorkManagerTheme
+import com.practice.workmanager.utils.MainViewModelFactory
 import com.practice.workmanager.utils.QuoteWorker
 import kotlinx.coroutines.delay
 import java.util.Calendar
@@ -62,7 +68,7 @@ class MainActivity : ComponentActivity() {
         scheduleHourlyQuoteWork()
 
         // Initialize ViewModel
-        viewModel = ViewModelProvider(this)[MainViewModel::class.java]
+        viewModel = ViewModelProvider(this, MainViewModelFactory(this))[MainViewModel::class.java]
 
         viewModel.scheduleHourlyReminders(this)
 
@@ -90,29 +96,52 @@ class MainActivity : ComponentActivity() {
                     }
                 }
 
+                var posts by remember { mutableStateOf<List<String>>(emptyList()) }
+
+                LaunchedEffect(Unit) {
+                    viewModel.loadPosts()
+                    viewModel.posts.collect { posts = it }
+                }
+
                 Column(
                     modifier = Modifier
-                        .padding(insets)
-                        .fillMaxSize(),
-                    verticalArrangement = Arrangement.Center,
+                        .fillMaxSize()
+                        .padding(WindowInsets.systemBars.asPaddingValues()),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-//                    Text(
-//                        text = "Time left to leave office:",
-//                        modifier = Modifier
-//                            .padding(top = 32.dp, start = 16.dp),
-//                        fontSize = 24.sp
-//                    )
+                    Button(onClick = { viewModel.loadPosts() }) {
+                        Text("Fetch Posts")
+                    }
 
-                    Text(
-                        text = "${viewModel.formatDuration(remainingTime)} hrs",
-                        modifier = Modifier
-                            .padding(16.dp),
-                        style = MaterialTheme.typography.headlineMedium,
-                        fontSize = 60.sp
-                    )
+                    Spacer(Modifier.height(16.dp))
+
+                    LazyColumn {
+                        items(posts) { title ->
+                            Text(
+                                text = "• $title",
+                                modifier = Modifier.padding(8.dp)
+                            )
+                        }
+                    }
                 }
             }
+
+//                Column(
+//                    modifier = Modifier
+//                        .padding(insets)
+//                        .fillMaxSize(),
+//                    verticalArrangement = Arrangement.Center,
+//                    horizontalAlignment = Alignment.CenterHorizontally
+//                ) {
+//                    Text(
+//                        text = "${viewModel.formatDuration(remainingTime)} hrs",
+//                        modifier = Modifier
+//                            .padding(16.dp),
+//                        style = MaterialTheme.typography.headlineMedium,
+//                        fontSize = 60.sp
+//                    )
+//                }
+//            }
         }
 
 

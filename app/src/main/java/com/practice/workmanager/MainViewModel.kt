@@ -5,20 +5,36 @@ import android.app.NotificationManager
 import android.content.Context
 import androidx.core.app.NotificationCompat
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.workDataOf
+import com.practice.workmanager.domain.PostRepository
 import com.practice.workmanager.utils.CompressWorker
 import com.practice.workmanager.utils.NotifyWorker
 import com.practice.workmanager.utils.ReminderWorker
 import com.practice.workmanager.utils.UploadWorker
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
 import java.util.Calendar
 import java.util.UUID
 import java.util.concurrent.TimeUnit
 
-class MainViewModel : ViewModel() {
+class MainViewModel(context: Context) : ViewModel() {
+
+    private val repository = PostRepository(context)
+
+    private val _posts = MutableStateFlow<List<String>>(emptyList())
+    val posts = _posts.asStateFlow()
+
+    fun loadPosts() {
+        viewModelScope.launch {
+            _posts.value = repository.getPosts().map { it.title }
+        }
+    }
 
     fun startWork(context: Context, imagePaths: List<String>): UUID {
         val compressWork = OneTimeWorkRequestBuilder<CompressWorker>()
